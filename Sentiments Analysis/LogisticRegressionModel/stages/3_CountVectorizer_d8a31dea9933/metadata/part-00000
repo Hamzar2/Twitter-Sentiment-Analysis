@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.CountVectorizerModel","timestamp":1716053817320,"sparkVersion":"3.5.1","uid":"CountVectorizer_d8a31dea9933","paramMap":{"inputCol":"ngrams","vocabSize":100000,"outputCol":"tf"},"defaultParamMap":{"vocabSize":262144,"binary":false,"maxDF":9.223372036854776E18,"minDF":1.0,"minTF":1.0,"outputCol":"CountVectorizer_d8a31dea9933__output"}}

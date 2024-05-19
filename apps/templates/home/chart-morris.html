@@ -1,0 +1,196 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Charts {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- [ Main Content ] start -->
+<div class="pcoded-main-container">
+    <div class="pcoded-wrapper">
+
+        <div class="pcoded-content">
+            <div class="pcoded-inner-content">
+                <!-- [ breadcrumb ] start -->
+                <div class="page-header">
+                    <div class="page-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <div class="page-header-title">
+                                    <h5 class="m-b-10">Morris Chart</h5>
+                                </div>
+                                <ul class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
+                                    <li class="breadcrumb-item"><a href="javascript:">Chart</a></li>
+                                    <li class="breadcrumb-item"><a href="javascript:">Morris Chart</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- [ breadcrumb ] end -->
+                <div class="main-body">
+                    <div class="page-wrapper">
+                        <!-- [ Main Content ] start -->
+                        <div class="row">
+                            <!-- [ Morris Chart ] start -->
+                            <div class="col-xl-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Sentiments By Entity</h5>
+                                    </div>
+                                    <div class="card-block" style="height:600px;">
+                                        <div id="bar-example" style="height:500px;margin-bottom: 20px;"></div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Top Words By Sentiment "Neutral"</h5>
+                                    </div>
+                                    <div class="card-block" style="height:600px;">
+                                        <div id="neutral-chart" style="height:500px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Top Words By Sentiment "Negative"</h5>
+                                    </div>
+                                    <div class="card-block" style="height:600px;">
+                                        <div id="negative-chart" style="height:500px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Top Words By Sentiment "Positive"</h5>
+                                    </div>
+                                    <div class="card-block" style="height:600px;">
+                                        <div id="positive-chart" style="height:500px">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Sentiment Percentages</h5>
+                                    </div>
+                                    <div class="card-block" style="height:600px">
+                                        <div id="sentiment-chart" style="height:300px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- [ Morris Chart ] end -->
+                        </div>
+                        <!-- [ Main Content ] end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<!-- [ Main Content ] end -->
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<!-- chart-morris Js -->
+<script src="{{ config.ASSETS_ROOT }}/plugins/chart-morris/js/raphael.min.js"></script>
+<script src="{{ config.ASSETS_ROOT }}/plugins/chart-morris/js/morris.min.js"></script>
+<script src="{{ config.ASSETS_ROOT }}/js/pages/chart-morris-custom.js"></script>
+
+<script>
+    var sentimentsByEntity = JSON.parse('{{sentiments_by_entity | tojson}}');
+
+    // Convertir les données au format compatible avec Morris.js
+    var data = [];
+    for (var entity in sentimentsByEntity) {
+        if (sentimentsByEntity.hasOwnProperty(entity)) {
+            var entityData = sentimentsByEntity[entity];
+            entityData['Entity'] = entity;
+            data.push(entityData);
+        }
+    }
+    console.log(data)
+
+    // Créer le graphique à barres
+    new Morris.Bar({
+        // ID de l'élément où le graphique sera affiché
+        element: 'bar-example',
+        // Données à utiliser
+        data: data,
+        // Noms des colonnes de données JSON à utiliser comme étiquettes de l'axe X
+        xkey: 'Entity',
+        // Noms des propriétés JSON à utiliser comme données pour les barres
+        ykeys: ['Positive', 'Neutral', 'Negative'],
+        // Étiquettes des barres dans l'ordre correspondant aux données ykeys
+        labels: ['Positive', 'Neutral', 'Negative'],
+        // Couleurs des barres
+        barColors: ['#5cb85c', '#f0ad4e', '#d9534f'],
+        xLabelAngle: 70,
+
+    });
+    var sentimentData = JSON.parse('{{sentiment_percentages | tojson}}');
+    // console.log(sentimentData)
+
+    // Convertir les données en un tableau compréhensible par Morris.js
+    var chartData = [];
+    for (var sentiment in sentimentData) {
+        chartData.push({
+            label: sentiment,
+            value: sentimentData[sentiment]
+        });
+    }
+
+    // Créer le graphique
+    Morris.Donut({
+        element: 'sentiment-chart',
+        data: chartData,
+        formatter: function (y) {
+            return y + "%"
+        },
+        colors: ['#007bff', '#17a2b8', '#b8daff', '#6c757d']
+    });
+    const topWordsBySentiment = JSON.parse('{{ top_words_by_sentiment|tojson }}');
+
+    function createMorrisBarChart(elementId, data) {
+        new Morris.Bar({
+            element: elementId,
+            data: data.map(item => ({
+                word: item[0],
+                count: item[1]
+            })),
+            xkey: 'word',
+            ykeys: ['count'],
+            labels: ['Count'],
+            hideHover: 'auto',
+            resize: true,
+            xLabelAngle: 70,
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        createMorrisBarChart('positive-chart', topWordsBySentiment.positive);
+        createMorrisBarChart('negative-chart', topWordsBySentiment.negative);
+        createMorrisBarChart('neutral-chart', topWordsBySentiment.neutral);
+    });
+
+</script>
+
+
+
+
+
+{% endblock javascripts %}
