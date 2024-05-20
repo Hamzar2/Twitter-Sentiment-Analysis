@@ -63,3 +63,10 @@ def main(args , path_data):
         time.sleep(10)
         i+=1
 
+if __name__ == "__main__":
+    path_data = r"C:\Users\DR2\Desktop\IASD\S2\BigData\Twitter Sentiment Analysis\Sentiments Analysis\twitter_validation.csv"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bootstrap-server', default='localhost:9092')
+    parser.add_argument('--topic', default="twitter")
+    args = parser.parse_args()
+    main(args , path_data)

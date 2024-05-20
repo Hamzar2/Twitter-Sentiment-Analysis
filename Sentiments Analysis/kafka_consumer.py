@@ -25,6 +25,9 @@ class TwitterSentimentAnalyzer:
         self.client = MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
         self.collection = "predictions"
+        self.modelPredictions = []
+        self.acc = None
+        self.f1 = None
 
     def create_spark_session(self):
         
@@ -115,7 +118,7 @@ class TwitterSentimentAnalyzer:
         df = self.spark.read.csv(self.path_data,
                             inferSchema=True,
                             header=False,
-                            schema=schema).sample(0.5)
+                            schema=schema)
 
         df = df.filter(df.tweet.isNotNull())
         df.show()
@@ -129,18 +132,23 @@ class TwitterSentimentAnalyzer:
 
         evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
         accuracy = evaluator.evaluate(prediction, {evaluator.metricName: "accuracy"})
+        accuracy = round(accuracy, 2) 
         f11 = evaluator.evaluate(prediction, {evaluator.metricName: "f1"})
-
+        f11 = round(f11, 2) 
     
-        self.modelPredictions = []
-        self.acc = accuracy
-        self.f1 = f11
-
         print("Accuracy:", accuracy)
         print("f1:", f11)
 
-        
-        prediction_pd = prediction.toPandas()
-        prediction_dict = prediction_pd.to_dict("records")
-        self.modelPredictions.extend(prediction_dict)
+        dic = {"accuracy" : accuracy , "f1":f11}
+        collection = self.db["model"]
+        collection.insert_one(dic)
 
+
+if __name__ == "__main__":
+    findspark.init()
+    path_data = r"C:\Users\DR2\Desktop\IASD\S2\BigData\Twitter Sentiment Analysis\Sentiments Analysis\twitter_training.csv"
+    analyzer = TwitterSentimentAnalyzer(path_data)
+    analyzer.create_spark_session()
+    analyzer.create_pipeline()
+    analyzer.model()
+    analyzer.start_streaming()

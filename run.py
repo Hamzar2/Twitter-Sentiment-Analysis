@@ -26,6 +26,7 @@ import logging
 import argparse
 import threading
 from time import sleep
+from pymongo import MongoClient
 
 
 Predictions = []
@@ -132,11 +133,54 @@ def index():
 @app.route('/tbl_bootstrap.html') 
 def table():
     data = load_data_from_csv(r'apps\twitter_training - twitter_training.csv')  # Mettez le nom de votre fichier CSV ici
-    return render_template('home/tbl_bootstrap.html', data=data[:30])
+    return render_template('home/tbl_bootstrap.html', data=data[:100])
+
+def consumer():
+    findspark.init()
+    path_data = r"C:\Users\DR2\Desktop\IASD\S2\BigData\Twitter Sentiment Analysis\Sentiments Analysis\twitter_cleaned_data.csv"
+    global analyzer 
+    analyzer = TwitterSentimentAnalyzer(path_data)
+    analyzer.create_spark_session()
+    analyzer.create_pipeline()
+    analyzer.model()
+    
+
+MONGO_URI = 'mongodb+srv://twitter:1234@cluster0.u0w2sya.mongodb.net/'
+MONGO_DB = 'twitter'
+client = MongoClient(MONGO_URI)
+db = client[MONGO_DB]
+
+@app.route('/api/data')
+def get_data():
+    
+    collection = db.predictions
+    data = list(collection.find())
+    #print(data)
+    processed_data = []
+    for doc in reversed(data):  # Reverse the order of data
+        processed_data.append({
+            'tweet': doc.get('tweet', ''),
+            'target': doc.get('target', ''),
+            'label': doc.get('label', ''),
+            'filtered_words': doc.get('filtered_words', ''),
+            'prediction': doc.get('prediction', '')
+        })
+    return jsonify(processed_data)
 
 @app.route("/get_predictions")
 def get_predictions():
-    return jsonify(analyzer.modelPredictions) , analyzer.acc , analyzer.f1
+    """Fetches accuracy and F1 score from the 'model' collection and returns as JSON."""
+    collection = db.model  
+    
+    # Fetch the latest document (assuming you store the latest metrics)
+    latest_metrics = list(collection.find())
+    for doc in reversed(latest_metrics):
+        processed_data = {
+            'accuracy': doc.get('accuracy', 0.0),
+            'f1': doc.get('f1', 0.0)          
+        }
+        print(processed_data)
+        return jsonify(processed_data)
 
 def streaming():
     path_data = r"Sentiments Analysis\twitter_validation.csv"
@@ -146,31 +190,19 @@ def streaming():
     args = parser.parse_args()
     main(args , path_data)
 
-def consuming():
-    findspark.init()
-    path_data = r"Sentiments Analysis\twitter_cleaned_data.csv"
-    global analyzer 
-    analyzer = TwitterSentimentAnalyzer(path_data)
-    analyzer.create_spark_session()
-    analyzer.create_pipeline()
-    analyzer.model()
-    analyzer.start_streaming()
-
 
 def dashboard():
     app.run(debug=DEBUG, use_reloader=False)
 
+def test():
+    response_data = {
+        "predictions": analyzer.modelPredictions,
+        "accuracy": analyzer.acc,
+        "f1_score": analyzer.f1
+    }
+    return response_data
+
 if __name__ == "__main__":
-
-    dash = threading.Thread(target=dashboard)
-    producer = threading.Thread(target=streaming)
-    consumer = threading.Thread(target=consuming)
-
-    dash.start()
-    sleep(2) # Wait for the dashboard to start
-    producer.start()
-    consumer.start()
-
-    dash.join()  # Wait for the dashboard to finish
-    producer.join() # Wait for the producer to finish
-    consumer.join() # Wait for the consumer to finish
+    #consumer()
+    app.run(debug=DEBUG, use_reloader=False)
+    
