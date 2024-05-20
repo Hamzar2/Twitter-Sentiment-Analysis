@@ -20,7 +20,7 @@ class TwitterSentimentAnalyzer:
         self.loadedLRModel = None
         self.pipeline = None
         self.path_data = path_data
-        self.mongo_uri = "mongodb+srv://twitter:1234@cluster0.u0w2sya.mongodb.net/"
+        self.mongo_uri = "mongodb://localhost:27017/"
         self.mongo_db = mongo_db
         self.client = MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]

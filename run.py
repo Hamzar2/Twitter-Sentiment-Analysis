@@ -1,7 +1,3 @@
-# -- encoding: utf-8 --
-"""
-Copyright (c) 2019 - present AppSeed.us
-"""
 
 import os
 from   flask_migrate import Migrate
@@ -145,7 +141,7 @@ def consumer():
     analyzer.model()
     
 
-MONGO_URI = 'mongodb+srv://twitter:1234@cluster0.u0w2sya.mongodb.net/'
+MONGO_URI = 'mongodb://localhost:27017/'
 MONGO_DB = 'twitter'
 client = MongoClient(MONGO_URI)
 db = client[MONGO_DB]
